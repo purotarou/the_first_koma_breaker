@@ -428,7 +428,7 @@ resetPlayer(0,16,0);
 const aimDir=()=>{const cp=Math.cos(pl.pitch);return[-Math.sin(pl.yaw)*cp,Math.sin(pl.pitch),-Math.cos(pl.yaw)*cp]};
 function raySph(ox,oy,oz,d,cx,cy,cz,r){const px=cx-ox,py=cy-oy,pz=cz-oz,t=px*d[0]+py*d[1]+pz*d[2];if(t<0)return-1;const d2=px*px+py*py+pz*pz-t*t;if(d2>r*r)return-1;return Math.max(0.01,t-Math.sqrt(r*r-d2))}
 function startReload(){if(pl.reload>0||pl.ammo>=16)return;pl.reload=1.0;snd('reload');addText(pl.ammo===0?'カチッ':'ガシャッ',W*0.72,H*0.62,{size:50,st:'cyan',life:0.4})}
-function shoot(){pl.ammo--;pl.cool=0.125;pl.kick+=0.03;pl.rec=1;pl.flashT=0.05;pl.spin+=PI/3;shake(0.07);snd('shot');
+function shoot(){pl.ammo--;pl.cool=0.1;pl.kick+=0.03;pl.rec=1;pl.flashT=0.05;pl.spin+=PI/3;shake(0.07);snd('shot');
 let d=aimDir();const ox=cam.x,oy=cam.y,oz=cam.z,as=touchMode||G.demoOn;let best=as?0.1:0.035,bp=null;
 const chk=(x,y,z,bias)=>{const px=x-ox,py=y-oy,pz=z-oz,l=Math.hypot(px,py,pz)||1,a=Math.acos(clamp((px*d[0]+py*d[1]+pz*d[2])/l,-1,1))-bias;if(a<best){best=a;bp=[px/l,py/l,pz/l]}};
 for(const e of enemies){if(e.dead||e.st==='spawn')continue;for(const s of spheres(e))chk(s[0],s[1],s[2],s[4]>1.5?0.02:0)}for(const s of shots)chk(s.x,s.y,s.z,0);
@@ -663,7 +663,7 @@ else if(t.identifier===touch.lid||t.identifier===touch.fid){inp.lx+=(p.x-touch.l
 function tEnd(e){e.preventDefault();for(const t of e.changedTouches){if(t.identifier===touch.sid){touch.sid=-1;touch.dx=touch.dy=0}if(t.identifier===touch.lid)touch.lid=-1;if(t.identifier===touch.fid)touch.fid=-1;delete touch.hold[t.identifier]}}
 uic.addEventListener('touchend',tEnd,{passive:false});uic.addEventListener('touchcancel',tEnd,{passive:false});
 uic.addEventListener('mousedown',e=>{if(touchMode)return;const p=evPos(e);if(G.state!=='play'){tap(p);return}if(document.pointerLockElement!==uic){try{uic.requestPointerLock()}catch(er){}}if(e.button===0){mouseFire=true;inp.fireBuf=0.15}else if(e.button===2)inp.special=true});
-addEventListener('mouseup',()=>{mouseFire=false});uic.addEventListener('contextmenu',e=>e.preventDefault());
+addEventListener('mouseup',e=>{if(e.button===0)mouseFire=false});addEventListener('blur',()=>{mouseFire=false;for(const k in keys)keys[k]=false});uic.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(touchMode||G.state!=='play')return;if(document.pointerLockElement===uic||mouseFire){inp.lx+=(e.movementX||0)*0.0024;inp.ly+=(e.movementY||0)*0.0024}});
 addEventListener('keydown',e=>{keys[e.code]=true;if(G.state!=='play'){if(e.code==='Enter'||e.code==='Space')tap(null)}else{if(e.code==='Space'||e.code==='ShiftLeft')inp.dash=true;if(e.code==='KeyE'||e.code==='KeyQ')inp.special=true;if(e.code==='KeyR')inp.reload=true;if(e.code==='KeyF'||e.code==='KeyJ'||e.code==='Enter')inp.fireBuf=0.15}if(e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.code]=false});
