@@ -419,7 +419,7 @@ const m=MEL[s];if(m){const f=mf(m+(musOn===2?0:0));tone('triangle',f,f*0.995,0.2
 musNext+=sd;musStep++}}
 // ================= ENTITIES =================
 const pl={x:0,z:16,yaw:0,pitch:0,vx:0,vz:0,hp:100,gauge:0};
-const inp={mx:0,mz:0,lx:0,ly:0,fire:false,dash:false,special:false,reload:false};
+const inp={mx:0,mz:0,lx:0,ly:0,fire:false,fireBuf:0,dash:false,special:false,reload:false};
 const enemies=[],shots=[];
 const G={state:'title',demoOn:false,idle:0,t:0,wave:-1,waveT:0,grp:0,clearT:-1,kills:0,score:0,combo:0,comboT:0,time:0,dmg:0,resT:0,cine:0,mood:0,banner:null,bannerT:9,intro:9,endT:-1,comboPop:0};
 let boss=null,hitMark=0,hitCrit=false,cutSp=0,cutBoss=0,touchMode=false,RDT=0;const muz=[0,0,0];
@@ -456,7 +456,7 @@ if(inp.reload&&!pl.sp)startReload();inp.reload=false;
 if(inp.special&&pl.gauge>=100&&!pl.sp&&!cine){pl.sp=1;pl.spT=0;pl.gauge=0;cutSp=0.6;snd('charge');slowT=0.55;slowK=0.3}inp.special=false;
 if(pl.sp===1){pl.spT+=RDT;lines(0.7,'#16121f');if(pl.spT>0.55){pl.sp=2;pl.spT=0;snd('beam');addText('ズドォォォン！',W/2,H*0.28,{size:104,st:'cyan',life:1.0,grow:0.1,rot:-0.08});flash(0.6);invA=1}}
 else if(pl.sp===2){pl.spT+=dt;trauma=Math.max(trauma,0.6);pl.rec=1;lines(0.6,'#fff');beamDamage(dt);if(pl.spT>0.8)pl.sp=0}
-if(inp.fire&&pl.cool<=0&&pl.reload<=0&&!pl.sp&&!cine){if(pl.ammo>0)shoot();else startReload()}
+inp.fireBuf-=dt;if((inp.fire||inp.fireBuf>0)&&pl.cool<=0&&pl.reload<=0&&!pl.sp&&!cine){inp.fireBuf=0;if(pl.ammo>0)shoot();else startReload()}
 pl.gunDip=lerp(pl.gunDip,pl.reload>0?1:0,1-Math.exp(-14*dt))}
 function hurtPlayer(d,x,z){if(pl.inv>0||pl.dead||G.cine>0||G.state==='clear')return;if(G.demoOn){d*=0.3;if(pl.hp-d<40)d=0}
 pl.hp-=d;G.dmg+=d;pl.inv=0.45;hurtA=1;shake(0.5);snd('hurt');stopT(0.04);lines(0.6,'#c20020');pl.tilt=(Math.random()<.5?-1:1)*0.09;
@@ -655,19 +655,19 @@ function evPos(t){const r=uic.getBoundingClientRect();return{x:(t.clientX-r.left
 function tap(p){audioInit();if(wipe.on)return;if(G.state==='title'){if(p&&p.x>W-84&&p.y<84){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(e){}return}startWipe(startGame)}
 else if(G.state==='over'&&G.resT>1.2)startWipe(startGame);else if(G.state==='clear'&&G.resT>1.5)startWipe(()=>{resetWorld();G.state='title';G.demoOn=false;G.idle=0})}
 uic.addEventListener('touchstart',e=>{e.preventDefault();touchMode=hasTouch=true;for(const t of e.changedTouches){const p=evPos(t);if(G.state!=='play'){tap(p);continue}let hit=null;for(const k in BTN){const b=BTN[k];if(Math.hypot(p.x-b.x,p.y-b.y)<b.r*1.15)hit=k}
-if(hit){touch.hold[t.identifier]=hit;if(hit==='fire'){touch.fid=t.identifier;touch.lx=p.x;touch.ly=p.y}else inp[hit]=true}
+if(hit){touch.hold[t.identifier]=hit;if(hit==='fire'){touch.fid=t.identifier;touch.lx=p.x;touch.ly=p.y;inp.fireBuf=0.15}else inp[hit]=true}
 else if(p.x<W*0.42&&touch.sid<0){touch.sid=t.identifier;touch.ox=clamp(p.x,90,400);touch.oy=clamp(p.y,300,630);touch.dx=touch.dy=0}
 else if(touch.lid<0){touch.lid=t.identifier;touch.lx=p.x;touch.ly=p.y}}},{passive:false});
 uic.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches){const p=evPos(t);if(t.identifier===touch.sid){let dx=p.x-touch.ox,dy=p.y-touch.oy;const l=Math.hypot(dx,dy);if(l>70){dx*=70/l;dy*=70/l}touch.dx=dx/70;touch.dy=dy/70}
 else if(t.identifier===touch.lid||t.identifier===touch.fid){inp.lx+=(p.x-touch.lx)*0.0052;inp.ly+=(p.y-touch.ly)*0.0042;touch.lx=p.x;touch.ly=p.y}}},{passive:false});
 function tEnd(e){e.preventDefault();for(const t of e.changedTouches){if(t.identifier===touch.sid){touch.sid=-1;touch.dx=touch.dy=0}if(t.identifier===touch.lid)touch.lid=-1;if(t.identifier===touch.fid)touch.fid=-1;delete touch.hold[t.identifier]}}
 uic.addEventListener('touchend',tEnd,{passive:false});uic.addEventListener('touchcancel',tEnd,{passive:false});
-uic.addEventListener('mousedown',e=>{if(touchMode)return;const p=evPos(e);if(G.state!=='play'){tap(p);return}if(document.pointerLockElement!==uic){try{uic.requestPointerLock()}catch(er){}}if(e.button===0)mouseFire=true;else if(e.button===2)inp.special=true});
+uic.addEventListener('mousedown',e=>{if(touchMode)return;const p=evPos(e);if(G.state!=='play'){tap(p);return}if(document.pointerLockElement!==uic){try{uic.requestPointerLock()}catch(er){}}if(e.button===0){mouseFire=true;inp.fireBuf=0.15}else if(e.button===2)inp.special=true});
 addEventListener('mouseup',()=>{mouseFire=false});uic.addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('mousemove',e=>{if(touchMode||G.state!=='play')return;if(document.pointerLockElement===uic||mouseFire){inp.lx+=(e.movementX||0)*0.0024;inp.ly+=(e.movementY||0)*0.0024}});
-addEventListener('keydown',e=>{keys[e.code]=true;if(G.state!=='play'){if(e.code==='Enter'||e.code==='Space')tap(null)}else{if(e.code==='Space'||e.code==='ShiftLeft')inp.dash=true;if(e.code==='KeyE'||e.code==='KeyQ')inp.special=true;if(e.code==='KeyR')inp.reload=true}if(e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault()});
+addEventListener('keydown',e=>{keys[e.code]=true;if(G.state!=='play'){if(e.code==='Enter'||e.code==='Space')tap(null)}else{if(e.code==='Space'||e.code==='ShiftLeft')inp.dash=true;if(e.code==='KeyE'||e.code==='KeyQ')inp.special=true;if(e.code==='KeyR')inp.reload=true;if(e.code==='KeyF'||e.code==='KeyJ'||e.code==='Enter')inp.fireBuf=0.15}if(e.code==='Space'||e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.code]=false});
-function readInput(){let mx=touch.dx,mz=-touch.dy;if(keys.KeyW||keys.ArrowUp)mz+=1;if(keys.KeyS||keys.ArrowDown)mz-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;inp.mx=clamp(mx,-1,1);inp.mz=clamp(mz,-1,1);inp.fire=mouseFire||touch.fid>=0}
+function readInput(){let mx=touch.dx,mz=-touch.dy;if(keys.KeyW||keys.ArrowUp)mz+=1;if(keys.KeyS||keys.ArrowDown)mz-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;if(keys.KeyA||keys.ArrowLeft)mx-=1;inp.mx=clamp(mx,-1,1);inp.mz=clamp(mz,-1,1);inp.fire=mouseFire||touch.fid>=0||!!(keys.KeyF||keys.KeyJ||keys.Enter)}
 // ================= UI =================
 const FONT='"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Meiryo","Noto Sans JP","Noto Sans CJK JP","IPAGothic",sans-serif',INK='#16121f';
 function txt(s,x,y,size,fill,st,lw,al,st2,lw2){ctx.font='900 '+size+'px '+FONT;ctx.textAlign=al||'center';ctx.textBaseline='middle';ctx.lineJoin='round';if(st2){ctx.strokeStyle=st2;ctx.lineWidth=lw2;ctx.strokeText(s,x,y)}if(st){ctx.strokeStyle=st;ctx.lineWidth=lw;ctx.strokeText(s,x,y)}ctx.fillStyle=fill;ctx.fillText(s,x,y)}
@@ -715,7 +715,7 @@ if(k>0.5){ctx.globalAlpha=(k-0.5)*2;focusLines(W/2,H*0.4,430,60,'rgba(255,255,25
 drawLogo(lerp(250,W/2,k),lerp(92,250,k),lerp(0.36,0.95,k));
 if(G.demoOn){ctx.fillStyle=INK;ctx.fillRect(W-250,26,214,44);txt('DEMO PLAY',W-143,49,28,Math.sin(now*6)>0?'#ffd91a':'#fff')}
 const p=1+0.05*Math.sin(now*6);ctx.save();ctx.translate(W/2,lerp(662,560,k));ctx.scale(p*lerp(0.8,1,k),p*lerp(0.8,1,k));burstPath(4,6,330,50,20,1.2,4);ctx.fillStyle=INK;ctx.fill();burstPath(0,0,330,50,20,1.2,4);ctx.fillStyle='#ffd91a';ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=5;ctx.stroke();txt('画面をタップでスタート！',0,2,38,INK);ctx.restore();
-if(k>0.6){ctx.globalAlpha=(k-0.6)*2.5;txt(hasTouch?'左スティック：移動　　右側ドラッグ：視点　　撃・必殺・回避・装填ボタン':'WASD：移動　マウス：視点／射撃　SPACE：回避　E・右クリック：必殺　R：装填',W/2,668,20,'#fff',INK,6);
+if(k>0.6){ctx.globalAlpha=(k-0.6)*2.5;txt(hasTouch?'左スティック：移動　　右側ドラッグ：視点　　撃・必殺・回避・装填ボタン':'WASD：移動　マウス：視点／射撃　SPACE：回避　F・J：射撃　E・右クリック：必殺　R：装填',W/2,668,20,'#fff',INK,6);
 ctx.fillStyle='#fff';ctx.fillRect(W-74,22,48,48);ctx.strokeStyle=INK;ctx.lineWidth=4;ctx.strokeRect(W-74,22,48,48);ctx.beginPath();for(const[a,b]of[[-1,-1],[1,-1],[1,1],[-1,1]]){const x=W-50+a*14,y=46+b*14;ctx.moveTo(x-a*9,y);ctx.lineTo(x,y);ctx.lineTo(x,y-b*9)}ctx.stroke();ctx.globalAlpha=1}}
 function drawResult(){const t=G.resT,cl=G.state==='clear';if(t<0.3)return;const u=easeBack(sat((t-0.3)/0.3));focusLines(W/2,H/2,380,70,cl?'rgba(255,255,255,.85)':'rgba(22,18,31,.8)',((now*8)|0)+11);
 ctx.save();ctx.translate(W/2,200);ctx.rotate(-0.05);ctx.scale(u,u);burstPath(6,8,470,120,22,1.2,6);ctx.fillStyle=INK;ctx.fill();burstPath(0,0,470,120,22,1.2,6);ctx.fillStyle=cl?'#ffd91a':'#fff';ctx.fill();ctx.strokeStyle=INK;ctx.lineWidth=7;ctx.stroke();
